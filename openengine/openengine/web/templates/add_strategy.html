@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+{% block title %}Create Strategy{% endblock %}
+
+{% block head %}
+<!-- CodeMirror -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+<style>
+    .CodeMirror {
+        height: 420px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        font-size: 0.875rem;
+        font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+
+    .CodeMirror-focused {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    .CodeMirror-gutters {
+        border-right: 1px solid var(--border);
+    }
+
+    .editor-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        margin-bottom: 0.5rem;
+    }
+
+    .editor-hint {
+        font-size: 0.75rem;
+        color: var(--fg-dimmed);
+    }
+
+    .validation-result {
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-sm);
+        margin-top: 1rem;
+        font-size: 0.875rem;
+        font-family: 'SF Mono', SFMono-Regular, Consolas, monospace;
+        display: none;
+    }
+
+    .validation-success {
+        background: var(--profit-soft);
+        color: var(--profit);
+        border: 1px solid hsl(142 69% 58% / 30%);
+    }
+
+    .validation-error {
+        background: var(--loss-soft);
+        color: var(--loss);
+        border: 1px solid hsl(0 91% 71% / 30%);
+    }
+
+    /* AI Guide Section */
+    .ai-guide {
+        margin-bottom: 2rem;
+    }
+
+    .ai-guide summary {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, hsl(265 90% 55% / 10%), hsl(200 90% 55% / 10%));
+        border: 1px solid hsl(265 90% 55% / 25%);
+        border-radius: var(--radius-sm);
+        color: var(--fg);
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        list-style: none;
+    }
+
+    .ai-guide summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .ai-guide summary:hover {
+        background: linear-gradient(135deg, hsl(265 90% 55% / 18%), hsl(200 90% 55% / 18%));
+        border-color: hsl(265 90% 55% / 40%);
+    }
+
+    .ai-guide summary .chevron {
+        margin-left: auto;
+        transition: transform 0.2s ease;
+    }
+
+    .ai-guide[open] summary .chevron {
+        transform: rotate(90deg);
+    }
+
+    .ai-guide-content {
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        border-top: none;
+        border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+        background: var(--bg-card);
+    }
+
+    .ai-steps {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .ai-step {
+        flex: 1;
+        min-width: 180px;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: var(--bg-inset);
+        border: 1px solid var(--border);
+        text-align: center;
+    }
+
+    .ai-step-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .ai-step-text {
+        font-size: 0.85rem;
+        color: var(--fg-dimmed);
+        line-height: 1.4;
+    }
+
+    .prompt-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .prompt-section h4 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--fg);
+    }
+
+    .prompt-box {
+        position: relative;
+        background: var(--bg-inset);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 1rem 1.25rem;
+        padding-top: 2.75rem;
+        font-size: 0.82rem;
+        line-height: 1.6;
+        color: var(--fg-dimmed);
+        font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .copy-prompt-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        padding: 0.35rem 0.85rem;
+        font-size: 0.75rem;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .copy-prompt-btn:hover {
+        opacity: 0.85;
+        transform: translateY(-1px);
+    }
+
+    .copy-prompt-btn.copied {
+        background: var(--profit);
+    }
+
+    .example-ideas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .idea-chip {
+        padding: 0.4rem 0.85rem;
+        font-size: 0.78rem;
+        background: var(--bg-inset);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--fg-dimmed);
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-section">
+    <div class="page-header">
+        <div class="page-header-text">
+            <h1 class="page-title">Create <span class="text-accent">Strategy</span></h1>
+            <p class="page-subtitle">Write your trading strategy in Python and save it directly to the strategies folder
+            </p>
+        </div>
+        <a href="{{ url_for('main.strategies') }}" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Back to Strategies
+        </a>
+    </div>
+
+    <!-- AI Strategy Generator Guide -->
+    <details class="ai-guide" id="aiGuide">
+        <summary>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L12 22"></path>
+                <path d="M12 2a4 4 0 0 0-4 4c0 1.95 1.4 3.58 3.25 3.93"></path>
+                <path d="M8 10l-1 2h10l-1-2"></path>
+            </svg>
+            Generate Strategy with AI (ChatGPT / Gemini / Claude)
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </summary>
+        <div class="ai-guide-content">
+            <!-- Steps -->
+            <div class="ai-steps">
+                <div class="ai-step">
+                    <div class="ai-step-num">1</div>
+                    <div class="ai-step-text">Copy the prompt below</div>
+                </div>
+                <div class="ai-step">
+                    <div class="ai-step-num">2</div>
+                    <div class="ai-step-text">Paste in ChatGPT & describe your strategy idea</div>
+                </div>
+                <div class="ai-step">
+                    <div class="ai-step-num">3</div>
+                    <div class="ai-step-text">Copy the generated code & paste it below</div>
+                </div>
+            </div>
+
+            <!-- Prompt -->
+            <div class="prompt-section">
+                <h4>📋 Prompt to Copy</h4>
+                <div class="prompt-box" id="aiPromptBox">
+                    <button type="button" class="copy-prompt-btn" id="copyPromptBtn" onclick="copyAiPrompt()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span id="copyBtnText">Copy Prompt</span>
+                    </button>
+                    Generate a Python trading strategy class for my backtesting engine.
+
+                    Here is the base class your code must extend:
+
+                    from abc import ABC, abstractmethod
+                    import pandas as pd
+
+                    class BaseStrategy(ABC):
+                    @abstractmethod
+                    def generate_signals(self, data: pd.DataFrame) -> pd.Series:
+                    """
+                    Generate trading signals based on historical data.
+                    Returns a Pandas Series:
+                    1 for BUY,
+                    -1 for SELL,
+                    0 for HOLD.
+                    """
+                    pass
+
+                    Rules to follow strictly:
+                    1. Import pandas as pd, numpy as np, and from .base_strategy import BaseStrategy
+                    2. Create a single class in PascalCase (e.g., RsiStrategy) that extends BaseStrategy
+                    3. Implement generate_signals(self, data: pd.DataFrame) -> pd.Series
+                    4. Input data is a Pandas DataFrame with columns: Open, High, Low, Close, Volume (capital first
+                    letter). Index is DatetimeIndex.
+                    5. Return a pd.Series with the same index as input data containing: 1.0 = BUY, -1.0 = SELL, 0 = HOLD
+                    6. Use data = data.copy() before modifying the DataFrame
+                    7. Initialize signals as pd.Series(0, index=data.index, dtype=float)
+                    8. Use relative import: from .base_strategy import BaseStrategy
+                    9. All indicator periods (e.g., RSI 14, EMA 20) must be in number of candles/bars, not absolute time
+                    10. No if __name__ == "__main__" blocks
+                    11. No external APIs or file I/O
+                    12. Only use pandas, numpy, and Python standard library
+                    13. Output only the Python code, no explanations
+
+                    My strategy idea: [DESCRIBE YOUR STRATEGY HERE]
+                </div>
+            </div>
+
+            <!-- Example Ideas -->
+            <div class="prompt-section">
+                <h4>💡 Example Strategy Ideas</h4>
+                <div class="example-ideas">
+                    <span class="idea-chip">RSI buys below 30, sells above 70</span>
+                    <span class="idea-chip">EMA 9/21 crossover</span>
+                    <span class="idea-chip">MACD bullish/bearish crossover</span>
+                    <span class="idea-chip">Bollinger Bands mean reversion</span>
+                    <span class="idea-chip">VWAP crossover strategy</span>
+                    <span class="idea-chip">Stochastic RSI overbought/oversold</span>
+                    <span class="idea-chip">Supertrend indicator</span>
+                </div>
+            </div>
+
+            <p style="font-size: 0.8rem; color: var(--fg-dimmed); margin: 0;">
+                💡 <strong>Tip:</strong> The same strategy works on any timeframe. A "14-period RSI" means 14 daily
+                candles on daily data, or 14 hourly candles on hourly data. Just change the interval when running the
+                backtest.
+            </p>
+        </div>
+    </details>
+
+    <form id="strategyForm" action="{{ url_for('main.save_strategy') }}" method="POST">
+        <div class="form-card">
+            <!-- Strategy Name -->
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label" for="strategy_name">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Strategy Name
+                </label>
+                <input type="text" id="strategy_name" name="strategy_name" class="form-input"
+                    placeholder="e.g. EMA Crossover, RSI Strategy, MACD Signal" required
+                    pattern="[A-Za-z][A-Za-z0-9 _-]*" minlength="3" maxlength="50">
+                <span class="form-hint">Alphanumeric name (will be converted to a Python filename like
+                    <code>ema_crossover.py</code>)</span>
+            </div>
+
+            <!-- Strategy Description (optional) -->
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label" for="strategy_desc">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="17" y1="10" x2="3" y2="10"></line>
+                        <line x1="21" y1="6" x2="3" y2="6"></line>
+                        <line x1="21" y1="14" x2="3" y2="14"></line>
+                        <line x1="17" y1="18" x2="3" y2="18"></line>
+                    </svg>
+                    Description (optional)
+                </label>
+                <input type="text" id="strategy_desc" name="strategy_desc" class="form-input"
+                    placeholder="Brief description of what this strategy does">
+            </div>
+
+            <!-- Code Editor -->
+            <div class="form-group">
+                <label class="form-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    Python Code
+                </label>
+                <div class="editor-toolbar">
+                    <span class="editor-hint">Your class must extend BaseStrategy and implement generate_signals(self,
+                        data)</span>
+                    <button type="button" class="btn btn-secondary btn-sm" id="resetCodeBtn">
+                        Reset to Template
+                    </button>
+                </div>
+                <textarea id="code_editor" name="code">{{ default_code }}</textarea>
+            </div>
+
+            <!-- Validation feedback -->
+            <div id="validationResult" class="validation-result"></div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-lg" id="saveBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span id="saveText">Save Strategy</span>
+                    <span id="saveSpinner" class="spinner" style="display:none;"></span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-lg" id="validateBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Validate Code
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script>
+    (function () {
+        const DEFAULT_CODE = {{ default_code| tojson
+    }};
+
+    // Initialize CodeMirror
+    const editor = CodeMirror.fromTextArea(document.getElementById('code_editor'), {
+        mode: 'python',
+        theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'material-darker' : 'default',
+        lineNumbers: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        indentUnit: 4,
+        tabSize: 4,
+        indentWithTabs: false,
+        lineWrapping: false,
+        extraKeys: {
+            'Tab': function (cm) {
+                cm.replaceSelection('    ', 'end');
+            }
+        }
+    });
+
+    // Reset button
+    document.getElementById('resetCodeBtn').addEventListener('click', function () {
+        editor.setValue(DEFAULT_CODE);
+    });
+
+    // Validate button
+    document.getElementById('validateBtn').addEventListener('click', function () {
+        const code = editor.getValue();
+        const resultDiv = document.getElementById('validationResult');
+
+        fetch('{{ url_for("main.validate_strategy") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        })
+            .then(r => r.json())
+            .then(data => {
+                resultDiv.style.display = 'block';
+                if (data.valid) {
+                    resultDiv.className = 'validation-result validation-success';
+                    resultDiv.textContent = '✓ ' + data.message;
+                } else {
+                    resultDiv.className = 'validation-result validation-error';
+                    resultDiv.textContent = '✗ ' + data.message;
+                }
+            })
+            .catch(() => {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'validation-result validation-error';
+                resultDiv.textContent = '✗ Validation request failed';
+            });
+    });
+
+    // Form submit — sync CodeMirror back to textarea
+    document.getElementById('strategyForm').addEventListener('submit', function (e) {
+        editor.save();  // Push CM content back to the textarea
+        const btn = document.getElementById('saveBtn');
+        const text = document.getElementById('saveText');
+        const spinner = document.getElementById('saveSpinner');
+        btn.disabled = true;
+        text.textContent = 'Saving...';
+        spinner.style.display = 'inline-block';
+    });
+
+    // Listen for theme changes
+    const observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (m) {
+            if (m.attributeName === 'data-theme') {
+                const theme = document.documentElement.getAttribute('data-theme');
+                editor.setOption('theme', theme === 'dark' ? 'material-darker' : 'default');
+            }
+        });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+}) ();
+
+    // AI Prompt copy function (outside IIFE so onclick can access it)
+    function copyAiPrompt() {
+        const promptBox = document.getElementById('aiPromptBox');
+        // Get just the text content, excluding the button text
+        const btn = document.getElementById('copyPromptBtn');
+        const btnText = btn.textContent;
+
+        // Extract prompt text (everything after the button)
+        const fullText = promptBox.textContent;
+        const promptText = fullText.replace(btnText, '').trim();
+
+        navigator.clipboard.writeText(promptText).then(function () {
+            const btnLabel = document.getElementById('copyBtnText');
+            btn.classList.add('copied');
+            btnLabel.textContent = 'Copied!';
+            setTimeout(function () {
+                btn.classList.remove('copied');
+                btnLabel.textContent = 'Copy Prompt';
+            }, 2000);
+        }).catch(function () {
+            // Fallback for older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = promptText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const btnLabel = document.getElementById('copyBtnText');
+            btn.classList.add('copied');
+            btnLabel.textContent = 'Copied!';
+            setTimeout(function () {
+                btn.classList.remove('copied');
+                btnLabel.textContent = 'Copy Prompt';
+            }, 2000);
+        });
+    }
+</script>
+{% endblock %}

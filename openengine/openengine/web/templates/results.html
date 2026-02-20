@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+{% block title %}Results – {{ result.symbol }}{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+    .metrics-section {
+        margin-top: 2rem;
+    }
+
+    .metrics-section-title {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--fg-muted);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .metrics-section-title svg {
+        color: var(--primary);
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        margin-top: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-section">
+    <div class="page-header">
+        <div class="page-header-text">
+            <h1 class="page-title">Backtest <span class="text-accent">Results</span></h1>
+            <p class="page-subtitle">{{ result.symbol }} · {{ result.start_date }} to {{ result.end_date }} · {{
+                result.strategy|replace('_', ' ')|title }}</p>
+        </div>
+        <a href="{{ url_for('main.backtest_form') }}" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            New Backtest
+        </a>
+    </div>
+
+    <!-- ============ Return Metrics ============ -->
+    <div class="stats-grid stats-grid-4">
+        <div class="stat-card">
+            <div class="stat-card-inner">
+                <p class="stat-label">Initial Capital</p>
+                <p class="stat-value text-primary">₹{{ "{:,.0f}".format(result.initial_capital) }}</p>
+                <span class="stat-badge">Starting</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-inner">
+                <p class="stat-label">Final Value</p>
+                <p
+                    class="stat-value {% if result.final_value > result.initial_capital %}text-profit{% elif result.final_value < result.initial_capital %}text-loss{% endif %}">
+                    ₹{{ "{:,.2f}".format(result.final_value) }}
+                </p>
+                <span
+                    class="stat-badge {% if result.final_value > result.initial_capital %}badge-profit{% elif result.final_value < result.initial_capital %}badge-loss{% endif %}">
+                    Final
+                </span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-inner">
+                <p class="stat-label">Total Return</p>
+                <p
+                    class="stat-value {% if result.total_return > 0 %}text-profit{% elif result.total_return < 0 %}text-loss{% endif %}">
+                    {{ result.total_return }}%
+                </p>
+                <span
+                    class="stat-badge {% if result.total_return > 0 %}badge-profit{% elif result.total_return < 0 %}badge-loss{% endif %}">
+                    {% if result.total_return > 0 %}Profit{% elif result.total_return < 0 %}Loss{% else %}Flat{% endif
+                        %} </span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-inner">
+                <p class="stat-label">Max Drawdown</p>
+                <p class="stat-value text-loss">{{ result.max_drawdown }}%</p>
+                <span class="stat-badge badge-loss">Risk</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ Performance Metrics ============ -->
+    {% if metrics %}
+    <div class="metrics-section">
+        <p class="metrics-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            Performance & Risk
+        </p>
+        <div class="stats-grid stats-grid-4">
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">CAGR</p>
+                    <p
+                        class="stat-value {% if metrics.get('cagr_pct', 0) > 0 %}text-profit{% elif metrics.get('cagr_pct', 0) < 0 %}text-loss{% endif %}">
+                        {{ metrics.get('cagr_pct', 0) }}%</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Sharpe Ratio</p>
+                    <p
+                        class="stat-value {% if metrics.get('sharpe_ratio', 0) > 1 %}text-profit{% elif metrics.get('sharpe_ratio', 0) < 0 %}text-loss{% else %}text-cyan{% endif %}">
+                        {{ metrics.get('sharpe_ratio', 0) }}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Sortino Ratio</p>
+                    <p
+                        class="stat-value {% if metrics.get('sortino_ratio', 0) > 1 %}text-profit{% elif metrics.get('sortino_ratio', 0) < 0 %}text-loss{% else %}text-cyan{% endif %}">
+                        {{ metrics.get('sortino_ratio', 0) }}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Profit Factor</p>
+                    <p
+                        class="stat-value {% if metrics.get('profit_factor', 0) > 1 %}text-profit{% else %}text-loss{% endif %}">
+                        {{ metrics.get('profit_factor', 0) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrics-section">
+        <p class="metrics-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            Trade Statistics
+        </p>
+        <div class="stats-grid stats-grid-4">
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Total Trades</p>
+                    <p class="stat-value text-violet">{{ metrics.get('total_trades', 0) }}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Win Rate</p>
+                    <p
+                        class="stat-value {% if metrics.get('win_rate_pct', 0) > 50 %}text-profit{% else %}text-loss{% endif %}">
+                        {{ metrics.get('win_rate_pct', 0) }}%</p>
+                    <span class="stat-badge">{{ metrics.get('winning_trades', 0) }}W / {{ metrics.get('losing_trades',
+                        0) }}L</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Risk/Reward</p>
+                    <p class="stat-value text-cyan">{{ metrics.get('risk_reward_ratio', 0) }}</p>
+                    <span class="stat-badge">Avg W: ₹{{ "{:,.0f}".format(metrics.get('avg_win', 0)) }} / L: ₹{{
+                        "{:,.0f}".format(metrics.get('avg_loss', 0)) }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Expectancy</p>
+                    <p
+                        class="stat-value {% if metrics.get('expectancy', 0) > 0 %}text-profit{% else %}text-loss{% endif %}">
+                        ₹{{ "{:,.2f}".format(metrics.get('expectancy', 0)) }}</p>
+                    <span class="stat-badge">Per Trade</span>
+                </div>
+            </div>
+        </div>
+        <div class="stats-grid stats-grid-4" style="margin-top: 1rem;">
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Total Fees</p>
+                    <p class="stat-value text-loss">₹{{ "{:,.2f}".format(metrics.get('total_fees', 0)) }}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Avg Holding</p>
+                    <p class="stat-value text-violet">{{ metrics.get('avg_holding_period', 0) }} bars</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Largest Win</p>
+                    <p class="stat-value text-profit">₹{{ "{:,.2f}".format(metrics.get('largest_win', 0)) }}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Largest Loss</p>
+                    <p class="stat-value text-loss">₹{{ "{:,.2f}".format(metrics.get('largest_loss', 0)) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ============ Charts ============ -->
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2 class="chart-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    Equity Curve
+                </h2>
+            </div>
+            <div class="chart-container">
+                <canvas id="equityChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2 class="chart-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="20" x2="12" y2="10"></line>
+                        <line x1="18" y1="20" x2="18" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="16"></line>
+                    </svg>
+                    Drawdown
+                </h2>
+            </div>
+            <div class="chart-container">
+                <canvas id="drawdownChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ Trade Log ============ -->
+    {% if result.trade_log %}
+    <div class="table-card" style="margin-top: 1.5rem;">
+        <div class="table-card-header">
+            <h2 class="chart-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Trade Log
+            </h2>
+            <span class="trade-count">{{ result.trade_log|length }} trades</span>
+        </div>
+        <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+            <table class="data-table">
+                <thead style="position: sticky; top: 0; z-index: 1; background: var(--bg-elevated);">
+                    <tr>
+                        <th>#</th>
+                        <th>Entry</th>
+                        <th>Exit</th>
+                        <th>Dir</th>
+                        <th>Entry ₹</th>
+                        <th>Exit ₹</th>
+                        <th>Qty</th>
+                        <th>Gross P&L</th>
+                        <th>Fees</th>
+                        <th>Net P&L</th>
+                        <th>Bars</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trade in result.trade_log %}
+                    <tr>
+                        <td class="text-muted">{{ loop.index }}</td>
+                        <td class="mono-data">{{ trade.entry_date }}</td>
+                        <td class="mono-data">{{ trade.exit_date }}</td>
+                        <td>
+                            <span class="trade-badge trade-badge-{{ 'buy' if trade.direction == 'long' else 'sell' }}">
+                                {{ trade.direction|upper }}
+                            </span>
+                        </td>
+                        <td class="mono-data">{{ "{:,.2f}".format(trade.entry_price) }}</td>
+                        <td class="mono-data">{{ "{:,.2f}".format(trade.exit_price) }}</td>
+                        <td class="mono-data">{{ trade.quantity }}</td>
+                        <td
+                            class="mono-data {% if trade.gross_pnl > 0 %}text-profit{% elif trade.gross_pnl < 0 %}text-loss{% endif %}">
+                            {{ "{:,.2f}".format(trade.gross_pnl) }}
+                        </td>
+                        <td class="mono-data text-muted">{{ "{:,.2f}".format(trade.fees) }}</td>
+                        <td class="mono-data {% if trade.net_pnl > 0 %}text-profit{% elif trade.net_pnl < 0 %}text-loss{% endif %}"
+                            style="font-weight:600;">
+                            {{ "{:,.2f}".format(trade.net_pnl) }}
+                        </td>
+                        <td class="mono-data">{{ trade.holding_period }}</td>
+                        <td>
+                            <span class="stat-badge" style="font-size:0.6875rem;">{{ trade.exit_reason }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        const dates = {{ equity_dates_json| safe
+    }};
+    const values = {{ equity_values_json| safe }};
+    const ddDates = {{ drawdown_dates_json| safe }};
+    const ddValues = {{ drawdown_values_json| safe }};
+
+    // ---- Equity Curve ----
+    const ctx = document.getElementById('equityChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 350);
+    const isProfit = values[values.length - 1] >= values[0];
+
+    if (isProfit) {
+        gradient.addColorStop(0, 'rgba(52, 211, 153, 0.3)');
+        gradient.addColorStop(1, 'rgba(52, 211, 153, 0.0)');
+    } else {
+        gradient.addColorStop(0, 'rgba(248, 113, 113, 0.3)');
+        gradient.addColorStop(1, 'rgba(248, 113, 113, 0.0)');
+    }
+
+    const chartOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(15, 15, 25, 0.95)',
+                titleColor: '#e5e7eb', bodyColor: '#e5e7eb',
+                borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+                padding: 12, displayColors: false,
+            },
+        },
+        scales: {
+            x: {
+                grid: { color: 'rgba(255,255,255,0.06)' },
+                ticks: { color: 'rgba(255,255,255,0.45)', maxRotation: 0, maxTicksLimit: 6, font: { family: 'Inter', size: 11 } },
+                border: { color: 'rgba(255,255,255,0.1)' },
+            },
+            y: {
+                grid: { color: 'rgba(255,255,255,0.06)' },
+                ticks: { color: 'rgba(255,255,255,0.45)', font: { family: 'Inter', size: 11 } },
+                border: { color: 'rgba(255,255,255,0.1)' },
+            }
+        }
+    };
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Portfolio Value (₹)',
+                data: values,
+                borderColor: isProfit ? '#34d399' : '#f87171',
+                backgroundColor: gradient,
+                borderWidth: 2, fill: true, tension: 0.3,
+                pointRadius: 0, pointHoverRadius: 5,
+                pointHoverBackgroundColor: isProfit ? '#34d399' : '#f87171',
+                pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+            }]
+        },
+        options: {
+            ...chartOpts,
+            plugins: {
+                ...chartOpts.plugins,
+                tooltip: {
+                    ...chartOpts.plugins.tooltip,
+                    callbacks: {
+                        label: (c) => '₹' + c.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+                    }
+                }
+            },
+            scales: {
+                ...chartOpts.scales,
+                y: {
+                    ...chartOpts.scales.y,
+                    ticks: {
+                        ...chartOpts.scales.y.ticks,
+                        callback: (v) => '₹' + v.toLocaleString('en-IN'),
+                    }
+                }
+            }
+        }
+    });
+
+    // ---- Drawdown Chart ----
+    if (ddDates.length > 0) {
+        const ddCtx = document.getElementById('drawdownChart').getContext('2d');
+        const ddGradient = ddCtx.createLinearGradient(0, 0, 0, 350);
+        ddGradient.addColorStop(0, 'rgba(248, 113, 113, 0.4)');
+        ddGradient.addColorStop(1, 'rgba(248, 113, 113, 0.0)');
+
+        // Convert drawdown fractions to percentages
+        const ddPct = ddValues.map(v => (v * 100).toFixed(2));
+
+        new Chart(ddCtx, {
+            type: 'line',
+            data: {
+                labels: ddDates,
+                datasets: [{
+                    label: 'Drawdown (%)',
+                    data: ddPct,
+                    borderColor: '#f87171',
+                    backgroundColor: ddGradient,
+                    borderWidth: 2, fill: true, tension: 0.3,
+                    pointRadius: 0, pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#f87171',
+                    pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+                }]
+            },
+            options: {
+                ...chartOpts,
+                plugins: {
+                    ...chartOpts.plugins,
+                    tooltip: {
+                        ...chartOpts.plugins.tooltip,
+                        callbacks: { label: (c) => c.parsed.y + '%' }
+                    }
+                },
+                scales: {
+                    ...chartOpts.scales,
+                    y: {
+                        ...chartOpts.scales.y,
+                        ticks: {
+                            ...chartOpts.scales.y.ticks,
+                            callback: (v) => v + '%',
+                        }
+                    }
+                }
+            }
+        });
+    }
+}) ();
+</script>
+{% endblock %}

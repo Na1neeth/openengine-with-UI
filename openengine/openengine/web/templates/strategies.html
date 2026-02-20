@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Strategies{% endblock %}
+
+{% block content %}
+<div class="page-section">
+    <div class="page-header">
+        <div class="page-header-text">
+            <h1 class="page-title">Trading <span class="text-accent">Strategies</span></h1>
+            <p class="page-subtitle">Available strategies for backtesting and live trading</p>
+        </div>
+        <a href="{{ url_for('main.add_strategy') }}" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Create Strategy
+        </a>
+    </div>
+
+    <div class="strategies-grid">
+        {% for s in strategies %}
+        <div class="strategy-card">
+            <div class="strategy-card-header">
+                <div class="strategy-icon {% if s.is_user %}icon-user-strategy{% endif %}">
+                    {% if s.is_user %}
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    {% else %}
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                    {% endif %}
+                </div>
+                <div>
+                    <h3 class="strategy-name">{{ s.name }}</h3>
+                    <span class="strategy-type-badge {% if s.is_user %}badge-user{% endif %}">{{ s.type }}</span>
+                </div>
+            </div>
+            <p class="strategy-desc">{{ s.description }}</p>
+            <div class="strategy-params">
+                <span class="strategy-param-label">Parameters</span>
+                <span class="strategy-param-value mono-data">{{ s.parameters }}</span>
+            </div>
+            <div class="strategy-actions">
+                <a href="{{ url_for('main.backtest_form') }}?strategy={{ s.id }}" class="btn btn-primary btn-sm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Run Backtest
+                </a>
+                {% if s.is_user %}
+                <form action="{{ url_for('main.delete_strategy', strategy_id=s.id) }}" method="POST"
+                    style="display:inline;" onsubmit="return confirm('Delete {{ s.name }}?');">
+                    <button type="submit" class="btn btn-sm"
+                        style="background: var(--loss-soft); color: var(--loss); border: 1px solid hsl(0 91% 71% / 30%);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                            </path>
+                        </svg>
+                        Delete
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Add Strategy Card -->
+        <a href="{{ url_for('main.add_strategy') }}" class="strategy-card strategy-card-add" style="cursor:pointer;">
+            <div class="strategy-add-inner">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+                <h3>Add Strategy</h3>
+                <p>Write Python code to create a custom strategy</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- How to Add Strategies -->
+    <div class="info-card" id="how-to-add">
+        <div class="info-card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+            <h3>Strategy Structure</h3>
+        </div>
+        <p class="strategy-desc" style="margin-bottom: 1rem;">
+            Every strategy must extend <code>BaseStrategy</code> and implement
+            <code>generate_signals(self, data)</code>.
+            Return a pandas Series with values: <strong>1</strong> (BUY), <strong>-1</strong> (SELL), <strong>0</strong>
+            (HOLD).
+        </p>
+        <div class="code-block">
+            <pre><code>from openengine.strategies.base_strategy import BaseStrategy
+
+class MyStrategy(BaseStrategy):
+    def generate_signals(self, data):
+        # Your strategy logic here
+        # Return: 1 (BUY), -1 (SELL), 0 (HOLD)
+        signals = pd.Series(0, index=data.index)
+        return signals</code></pre>
+        </div>
+    </div>
+</div>
+{% endblock %}

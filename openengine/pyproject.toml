@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openengine"
+version = "1.0.0"
+description = "A backtesting and live trading engine library for Indian markets"
+readme = "README.md"
+authors = [
+    {name = "OpenEngine Contributors", email = "rajandran@marketcalls.in"}
+]
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: AGPL v3 License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = [
+    "requests>=2.31.0",
+    "duckdb>=0.9.0",
+    "pandas>=2.0.0",
+    "yfinance>=0.2.0",
+    "flask>=3.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/marketcalls/openengine"
+Documentation = "https://github.com/marketcalls/openengine#readme"
+Repository = "https://github.com/marketcalls/openengine"
+"Bug Tracker" = "https://github.com/marketcalls/openengine/issues"
+
+[project.scripts]
+openengine = "openengine.main:main"
+openengine-web = "openengine.web.app:run"

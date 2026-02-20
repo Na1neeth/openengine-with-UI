@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+{% block title %}Run Backtest{% endblock %}
+
+{% block content %}
+<div class="page-section">
+    <div class="page-header">
+        <div class="page-header-text">
+            <h1 class="page-title">Run <span class="text-accent">Backtest</span></h1>
+            <p class="page-subtitle">Configure your backtest parameters and run against historical data</p>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <form id="backtestForm" action="{{ url_for('main.run_backtest') }}" method="POST">
+            <div class="form-grid">
+                <!-- Symbol -->
+                <div class="form-group">
+                    <label class="form-label" for="symbol">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Symbol
+                    </label>
+                    <input type="text" id="symbol" name="symbol" class="form-input" placeholder="e.g. RELIANCE.NS"
+                        value="RELIANCE.NS" required>
+                    <span class="form-hint">Use .NS suffix for NSE stocks (e.g., TCS.NS, INFY.NS)</span>
+                </div>
+
+                <!-- Strategy -->
+                <div class="form-group">
+                    <label class="form-label" for="strategy">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                        Strategy
+                    </label>
+                    <select id="strategy" name="strategy" class="form-input">
+                        {% for s in strategies %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Start Date -->
+                <div class="form-group">
+                    <label class="form-label" for="start_date">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Start Date
+                    </label>
+                    <input type="date" id="start_date" name="start_date" class="form-input" value="2023-01-01" required>
+                </div>
+
+                <!-- End Date -->
+                <div class="form-group">
+                    <label class="form-label" for="end_date">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        End Date
+                    </label>
+                    <input type="date" id="end_date" name="end_date" class="form-input" value="2024-01-01" required>
+                </div>
+
+                <!-- Initial Capital -->
+                <div class="form-group form-group-full">
+                    <label class="form-label" for="initial_capital">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                        Initial Capital (₹)
+                    </label>
+                    <input type="number" id="initial_capital" name="initial_capital" class="form-input" value="100000"
+                        min="1000" step="1000" required>
+                </div>
+            </div>
+
+            <!-- Simulation Settings (collapsible) -->
+            <details class="sim-settings" style="margin-top: 1.5rem;">
+                <summary
+                    style="cursor:pointer; display:flex; align-items:center; gap:0.5rem; padding:0.75rem 1rem; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:0.875rem; font-weight:600; color:var(--fg); user-select:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
+                    Simulation Settings
+                    <span
+                        style="color:var(--fg-muted); font-weight:400; font-size:0.8125rem; margin-left:0.5rem;">(fees,
+                        slippage, position sizing, SL/TP)</span>
+                </summary>
+                <div style="padding:1.5rem 0 0;">
+                    <div class="form-grid">
+                        <!-- Brokerage -->
+                        <div class="form-group">
+                            <label class="form-label" for="brokerage_pct">Brokerage (%)</label>
+                            <input type="number" id="brokerage_pct" name="brokerage_pct" class="form-input" value="0.05"
+                                min="0" step="0.01">
+                            <span class="form-hint">Per side. E.g. 0.05 = 0.05% on each buy/sell</span>
+                        </div>
+
+                        <!-- Slippage -->
+                        <div class="form-group">
+                            <label class="form-label" for="slippage_pct">Slippage (%)</label>
+                            <input type="number" id="slippage_pct" name="slippage_pct" class="form-input" value="0.01"
+                                min="0" step="0.01">
+                            <span class="form-hint">Per side. Simulates market impact on fills</span>
+                        </div>
+
+                        <!-- Sizing Mode -->
+                        <div class="form-group">
+                            <label class="form-label" for="sizing_mode">Position Sizing</label>
+                            <select id="sizing_mode" name="sizing_mode" class="form-input"
+                                onchange="toggleSizingFields()">
+                                <option value="fixed_quantity">Max Affordable (auto)</option>
+                                <option value="percent_of_capital">% of Capital</option>
+                                <option value="risk_based">Risk-Based (SL distance)</option>
+                            </select>
+                        </div>
+
+                        <!-- Percent of capital (conditional) -->
+                        <div class="form-group" id="pctCapitalGroup" style="display:none;">
+                            <label class="form-label" for="percent_of_capital">Capital Allocation (%)</label>
+                            <input type="number" id="percent_of_capital" name="percent_of_capital" class="form-input"
+                                value="100" min="1" max="100" step="1">
+                            <span class="form-hint">Percentage of available cash to use per trade</span>
+                        </div>
+
+                        <!-- Risk per trade (conditional) -->
+                        <div class="form-group" id="riskGroup" style="display:none;">
+                            <label class="form-label" for="risk_per_trade">Max Risk per Trade (%)</label>
+                            <input type="number" id="risk_per_trade" name="risk_per_trade" class="form-input" value="2"
+                                min="0.1" max="100" step="0.1">
+                            <span class="form-hint">Max loss per trade as % of capital (requires SL)</span>
+                        </div>
+
+                        <!-- Stop Loss -->
+                        <div class="form-group">
+                            <label class="form-label" for="sl_pct">Stop Loss (%)</label>
+                            <input type="number" id="sl_pct" name="sl_pct" class="form-input" value="0" min="0"
+                                step="0.5">
+                            <span class="form-hint">0 = disabled. E.g. 5 = exit if price drops 5%</span>
+                        </div>
+
+                        <!-- Take Profit -->
+                        <div class="form-group">
+                            <label class="form-label" for="tp_pct">Take Profit (%)</label>
+                            <input type="number" id="tp_pct" name="tp_pct" class="form-input" value="0" min="0"
+                                step="0.5">
+                            <span class="form-hint">0 = disabled. E.g. 10 = exit if price rises 10%</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Out-of-Sample Testing (collapsible) -->
+            <details class="sim-settings" id="oosSettings" style="margin-top: 1.5rem;">
+                <summary
+                    style="cursor:pointer; display:flex; align-items:center; gap:0.5rem; padding:0.75rem 1rem; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:0.875rem; font-weight:600; color:var(--fg); user-select:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                    </svg>
+                    Out-of-Sample Testing
+                    <span
+                        style="color:var(--fg-muted); font-weight:400; font-size:0.8125rem; margin-left:0.5rem;">(train/test
+                        split, parameter optimisation)</span>
+                </summary>
+                <div style="padding:1.5rem 0 0;">
+                    <div class="form-grid">
+                        <!-- Enable OOS -->
+                        <div class="form-group form-group-full">
+                            <label class="form-label"
+                                style="display:flex; align-items:center; gap:0.75rem; cursor:pointer;">
+                                <input type="checkbox" id="oos_enabled" name="oos_enabled" value="1"
+                                    onchange="toggleOOSFields()"
+                                    style="width:18px; height:18px; accent-color:var(--primary);">
+                                Enable Out-of-Sample Testing
+                            </label>
+                            <span class="form-hint">Split data into train/test sets to validate strategy
+                                robustness</span>
+                        </div>
+
+                        <!-- Split Method -->
+                        <div class="form-group oos-field" style="display:none;">
+                            <label class="form-label" for="split_method">Split Method</label>
+                            <select id="split_method" name="split_method" class="form-input"
+                                onchange="toggleSplitFields()">
+                                <option value="percentage">Percentage Split</option>
+                                <option value="date">Date-Based Split</option>
+                            </select>
+                        </div>
+
+                        <!-- Train Percentage (shown for percentage split) -->
+                        <div class="form-group oos-field oos-pct-field" style="display:none;">
+                            <label class="form-label" for="train_pct">Training Data (%)</label>
+                            <input type="range" id="train_pct" name="train_pct" class="form-input" value="70" min="20"
+                                max="90" step="5"
+                                oninput="document.getElementById('train_pct_val').textContent = this.value + '% train / ' + (100-this.value) + '% test'"
+                                style="padding:0;">
+                            <span class="form-hint" id="train_pct_val">70% train / 30% test</span>
+                        </div>
+
+                        <!-- Split Date (shown for date split) -->
+                        <div class="form-group oos-field oos-date-field" style="display:none;">
+                            <label class="form-label" for="split_date">Split Date</label>
+                            <input type="date" id="split_date" name="split_date" class="form-input" value="">
+                            <span class="form-hint">Train data ends before this date, test data starts from this
+                                date</span>
+                        </div>
+
+                        <!-- Enable Optimisation -->
+                        <div class="form-group form-group-full oos-field" style="display:none;">
+                            <label class="form-label"
+                                style="display:flex; align-items:center; gap:0.75rem; cursor:pointer;">
+                                <input type="checkbox" id="oos_optimize" name="oos_optimize" value="1"
+                                    style="width:18px; height:18px; accent-color:var(--primary);">
+                                Enable Parameter Optimisation
+                            </label>
+                            <span class="form-hint">Grid-search over strategy parameter space on training data only
+                                (Sharpe maximisation)</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Submit -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    <span id="submitText">Run Backtest</span>
+                    <span id="submitSpinner" class="spinner" style="display:none;"></span>
+                </button>
+                <button type="reset" class="btn btn-secondary">
+                    Reset
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('backtestForm').addEventListener('submit', function () {
+        const btn = document.getElementById('submitBtn');
+        const text = document.getElementById('submitText');
+        const spinner = document.getElementById('submitSpinner');
+        btn.disabled = true;
+        text.textContent = 'Running...';
+        spinner.style.display = 'inline-block';
+
+        // Switch form action if OOS is enabled
+        const oosEnabled = document.getElementById('oos_enabled').checked;
+        if (oosEnabled) {
+            this.action = "{{ url_for('main.run_oos_backtest') }}";
+        } else {
+            this.action = "{{ url_for('main.run_backtest') }}";
+        }
+    });
+
+    function toggleSizingFields() {
+        const mode = document.getElementById('sizing_mode').value;
+        document.getElementById('pctCapitalGroup').style.display =
+            mode === 'percent_of_capital' ? '' : 'none';
+        document.getElementById('riskGroup').style.display =
+            mode === 'risk_based' ? '' : 'none';
+    }
+
+    function toggleOOSFields() {
+        const enabled = document.getElementById('oos_enabled').checked;
+        document.querySelectorAll('.oos-field').forEach(el => {
+            el.style.display = enabled ? '' : 'none';
+        });
+        if (enabled) {
+            toggleSplitFields();
+        }
+    }
+
+    function toggleSplitFields() {
+        const method = document.getElementById('split_method').value;
+        document.querySelectorAll('.oos-pct-field').forEach(el => {
+            el.style.display = method === 'percentage' ? '' : 'none';
+        });
+        document.querySelectorAll('.oos-date-field').forEach(el => {
+            el.style.display = method === 'date' ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}
