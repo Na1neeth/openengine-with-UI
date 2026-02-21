@@ -253,6 +253,93 @@
         </div>
     </div>
 
+    <!-- ============ Monte Carlo Robustness ============ -->
+    {% if mc_data %}
+    <div class="metrics-section">
+        <p class="metrics-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                <circle cx="12" cy="12" r="10"></circle>
+            </svg>
+            Monte Carlo Robustness ({{ mc_data.statistics.simulations }} Simulations)
+        </p>
+
+        {% if mc_data.warnings %}
+        <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for warning in mc_data.warnings %}
+            <div
+                style="padding: 0.75rem 1rem; border-radius: var(--radius); background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2); color: #f87171; font-size: 0.875rem;">
+                {{ warning }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="stats-grid stats-grid-4">
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Median Return</p>
+                    <p
+                        class="stat-value {% if mc_data.statistics.median_return > 0 %}text-profit{% else %}text-loss{% endif %}">
+                        {{ mc_data.statistics.median_return }}%</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">5th / 95th Percentile</p>
+                    <p class="stat-value text-cyan">{{ mc_data.statistics.p5_return }}% / {{
+                        mc_data.statistics.p95_return }}%</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">Probability of Loss</p>
+                    <p
+                        class="stat-value {% if mc_data.statistics.probability_negative > 30 %}text-loss{% else %}text-violet{% endif %}">
+                        {{ mc_data.statistics.probability_negative }}%</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <p class="stat-label">95th Percentile Drawdown</p>
+                    <p class="stat-value text-loss">{{ mc_data.statistics.p95_max_drawdown }}%</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h2 class="chart-title">Simulated Equity Curves (Sample of 50)</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="mcEquityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-grid" style="margin-top: 1.5rem;">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h2 class="chart-title">Final Returns Distribution</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="mcReturnsChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h2 class="chart-title">Max Drawdown Distribution</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="mcDrawdownChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- ============ Trade Log ============ -->
     {% if result.trade_log %}
     <div class="table-card" style="margin-top: 1.5rem;">
@@ -457,6 +544,145 @@
             }
         });
     }
+
+    // ---- Monte Carlo Charts ----
+    {% if mc_data %}
+    const mcData = {{ mc_data| tojson }};
+    if (mcData && mcData.sample_equity_curves && mcData.sample_equity_curves.length > 0) {
+        // 1. Simulated Equity Curves (Multi-line chart)
+        const mcEqCtx = document.getElementById('mcEquityChart').getContext('2d');
+        const numBars = mcData.sample_equity_curves[0].length;
+        const labels = Array.from({ length: numBars }, (_, i) => i);
+
+        const datasets = mcData.sample_equity_curves.map((curve, i) => ({
+            label: `Simulation ${i + 1}`,
+            data: curve,
+            borderColor: 'rgba(99, 102, 241, 0.15)', // faint indigo
+            borderWidth: 1,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            tension: 0.1
+        }));
+
+        // Add Median and Percentile bands
+        datasets.push({
+            label: 'Median',
+            data: mcData.median_band,
+            borderColor: 'rgba(52, 211, 153, 1)', // emerald
+            borderWidth: 3,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            tension: 0.1,
+            order: -1 // draw on top
+        });
+        datasets.push({
+            label: '5th Percentile',
+            data: mcData.p5_band,
+            borderColor: 'rgba(248, 113, 113, 1)', // red
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            tension: 0.1,
+            order: -1
+        });
+        datasets.push({
+            label: '95th Percentile',
+            data: mcData.p95_band,
+            borderColor: 'rgba(96, 165, 250, 1)', // blue
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            tension: 0.1,
+            order: -1
+        });
+
+        new Chart(mcEqCtx, {
+            type: 'line',
+            data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.06)' },
+                        ticks: { color: 'rgba(255,255,255,0.45)' },
+                        border: { color: 'rgba(255,255,255,0.1)' },
+                    }
+                }
+            }
+        });
+
+        // Helper function for histograms
+        function plotHistogram(ctx, data, color, labelText) {
+            // Bin the data
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            const numBins = 30;
+            const binSize = (max - min) / numBins || 1;
+
+            const bins = new Array(numBins).fill(0);
+            data.forEach(val => {
+                let binIdx = Math.floor((val - min) / binSize);
+                if (binIdx === numBins) binIdx--; // Handle max value edge case
+                bins[binIdx]++;
+            });
+
+            const binLabels = bins.map((_, i) => (min + i * binSize).toFixed(1) + '%');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: binLabels,
+                    datasets: [{
+                        label: labelText,
+                        data: bins,
+                        backgroundColor: color,
+                        borderWidth: 0,
+                        barPercentage: 1.0,
+                        categoryPercentage: 1.0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255,255,255,0.45)', maxTicksLimit: 8 },
+                            border: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.06)' },
+                            ticks: { color: 'rgba(255,255,255,0.45)' },
+                            border: { color: 'rgba(255,255,255,0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        const mcRetCtx = document.getElementById('mcReturnsChart').getContext('2d');
+        // Green if mostly profitable, red if not
+        const retColor = mcData.statistics.median_return >= 0 ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)';
+        plotHistogram(mcRetCtx, mcData.final_equity_distribution.map(v => ((v - {{ result.initial_capital }}) / {{ result.initial_capital }}) * 100), retColor, 'Frequency');
+
+    const mcDdCtx = document.getElementById('mcDrawdownChart').getContext('2d');
+    plotHistogram(mcDdCtx, mcData.drawdown_distribution, 'rgba(248, 113, 113, 0.7)', 'Frequency');
+    }
+    {% endif %}
 }) ();
 </script>
 {% endblock %}

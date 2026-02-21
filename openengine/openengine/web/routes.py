@@ -14,6 +14,7 @@ from openengine.strategies.base_strategy import BaseStrategy
 from openengine.engine.backtester import Backtester
 from openengine.engine.models import BacktestConfig, SizingMode, OOSConfig
 from openengine.engine.oos_engine import run_out_of_sample_backtest
+from openengine.engine.monte_carlo_engine import get_trade_returns, run_monte_carlo
 
 main_bp = Blueprint('main', __name__)
 
@@ -257,6 +258,15 @@ def run_backtest():
         # Extract structured data from result
         result_dict = result.to_dict()
 
+        # --- Monte Carlo ---
+        mc_enabled = request.form.get('mc_enabled') == '1'
+        mc_simulations = int(request.form.get('mc_simulations', 1000))
+        mc_data = None
+        if mc_enabled and result.trades:
+            returns = get_trade_returns(result.trades)
+            mc_result = run_monte_carlo(returns, initial_capital, simulations=mc_simulations)
+            mc_data = mc_result.to_dict()
+
         # Find strategy name for display
         strat_name = strategy_id
         for s in _get_available_strategies():
@@ -283,6 +293,7 @@ def run_backtest():
             'drawdown_values': result_dict['drawdown_series']['values'],
             'trade_log': result_dict['trades'],
             'metrics': result.metrics,
+            'mc_data': mc_data,
             'strategy': strat_name,
             'timestamp': datetime.now(),
             # Config snapshot for display
@@ -374,6 +385,15 @@ def run_oos_backtest():
         # Serialize
         oos_dict = oos_result.to_dict()
 
+        # --- Monte Carlo on Test Phase ---
+        mc_enabled = request.form.get('mc_enabled') == '1'
+        mc_simulations = int(request.form.get('mc_simulations', 1000))
+        mc_data = None
+        if mc_enabled and oos_result.test_result.trades:
+            returns = get_trade_returns(oos_result.test_result.trades)
+            mc_result = run_monte_carlo(returns, initial_capital, simulations=mc_simulations)
+            mc_data = mc_result.to_dict()
+
         # Find strategy name
         strat_name = strategy_id
         for s in _get_available_strategies():
@@ -405,6 +425,7 @@ def run_oos_backtest():
             'test_drawdown': oos_dict['test_drawdown'],
             'train_trade_log': oos_dict['train_trade_log'],
             'test_trade_log': oos_dict['test_trade_log'],
+            'mc_data': mc_data,
             # For dashboard display
             'total_return': oos_dict['test_metrics'].get('total_return_pct', 0),
             'final_value': oos_dict['test_metrics'].get('final_value', initial_capital),
@@ -444,7 +465,8 @@ def oos_results(result_id):
                            train_dd_dates_json=json.dumps(result['train_drawdown']['dates']),
                            train_dd_values_json=json.dumps(result['train_drawdown']['values']),
                            test_dd_dates_json=json.dumps(result['test_drawdown']['dates']),
-                           test_dd_values_json=json.dumps(result['test_drawdown']['values']))
+                           test_dd_values_json=json.dumps(result['test_drawdown']['values']),
+                           mc_data=result.get('mc_data'))
 
 
 @main_bp.route('/results/<result_id>')
@@ -462,7 +484,8 @@ def results(result_id):
                            drawdown_dates_json=json.dumps(result.get('drawdown_dates', [])),
                            drawdown_values_json=json.dumps(result.get('drawdown_values', [])),
                            metrics=result.get('metrics', {}),
-                           trade_log_json=json.dumps(result.get('trade_log', [])))
+                           trade_log_json=json.dumps(result.get('trade_log', [])),
+                           mc_data=result.get('mc_data'))
 
 
 @main_bp.route('/strategies')

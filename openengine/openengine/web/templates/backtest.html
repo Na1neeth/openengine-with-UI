@@ -243,6 +243,46 @@
                 </div>
             </details>
 
+            <!-- Monte Carlo Robustness (collapsible) -->
+            <details class="sim-settings" id="mcSettings" style="margin-top: 1.5rem;">
+                <summary
+                    style="cursor:pointer; display:flex; align-items:center; gap:0.5rem; padding:0.75rem 1rem; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:0.875rem; font-weight:600; color:var(--fg); user-select:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                    Monte Carlo Robustness
+                    <span
+                        style="color:var(--fg-muted); font-weight:400; font-size:0.8125rem; margin-left:0.5rem;">(trade
+                        sequence permutation)</span>
+                </summary>
+                <div style="padding:1.5rem 0 0;">
+                    <div class="form-grid">
+                        <!-- Enable Monte Carlo -->
+                        <div class="form-group form-group-full">
+                            <label class="form-label"
+                                style="display:flex; align-items:center; gap:0.75rem; cursor:pointer;">
+                                <input type="checkbox" id="mc_enabled" name="mc_enabled" value="1"
+                                    onchange="toggleMCFields()"
+                                    style="width:18px; height:18px; accent-color:var(--primary);">
+                                Enable Monte Carlo Simulation
+                            </label>
+                            <span class="form-hint">Shuffle historical trade returns to measure strategy fragility
+                                against adverse market sequencing</span>
+                        </div>
+
+                        <!-- Simulations Count -->
+                        <div class="form-group mc-field" style="display:none;">
+                            <label class="form-label" for="mc_simulations">Number of Simulations</label>
+                            <input type="number" id="mc_simulations" name="mc_simulations" class="form-input"
+                                value="1000" min="100" max="10000" step="100">
+                            <span class="form-hint">Higher values = better statistical confidence</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
             <!-- Submit -->
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
@@ -306,6 +346,13 @@
         });
         document.querySelectorAll('.oos-date-field').forEach(el => {
             el.style.display = method === 'date' ? '' : 'none';
+        });
+    }
+
+    function toggleMCFields() {
+        const enabled = document.getElementById('mc_enabled').checked;
+        document.querySelectorAll('.mc-field').forEach(el => {
+            el.style.display = enabled ? '' : 'none';
         });
     }
 </script>
