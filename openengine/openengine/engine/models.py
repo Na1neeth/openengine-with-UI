@@ -251,3 +251,46 @@ class OOSResult:
                 "test_range": f"{self.test_start} to {self.test_end}",
             },
         }
+
+
+# ---------------------------------------------------------------------------
+# Monte Carlo Configuration
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MonteCarloConfig:
+    """Configuration for Monte Carlo robustness testing."""
+
+    enabled: bool = False
+    simulations: int = 1000
+
+
+# ---------------------------------------------------------------------------
+# Monte Carlo Result
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MonteCarloResult:
+    """Result from Monte Carlo simulation."""
+
+    final_equity_distribution: List[float] = field(default_factory=list)
+    drawdown_distribution: List[float] = field(default_factory=list)
+    statistics: Dict[str, Any] = field(default_factory=dict)
+    sample_equity_curves: List[List[float]] = field(default_factory=list)
+    p5_band: List[float] = field(default_factory=list)
+    p95_band: List[float] = field(default_factory=list)
+    median_band: List[float] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialise to a JSON-friendly dict."""
+        return {
+            "final_equity_distribution": self.final_equity_distribution,
+            "drawdown_distribution": self.drawdown_distribution,
+            "statistics": self.statistics,
+            "sample_equity_curves": self.sample_equity_curves,
+            "p5_band": self.p5_band,
+            "p95_band": self.p95_band,
+            "median_band": self.median_band,
+            "warnings": self.warnings,
+        }
