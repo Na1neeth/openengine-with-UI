@@ -24,7 +24,7 @@ The project now includes a **Professional Web UI** for interactive analysis and 
 ---
 
 
-### 2. Developer Installation (Recommended)
+### 1. Installation 
 ```bash
 # Clone the repository
 git clone https://github.com/navaneeth/openengine-with-UI.git
@@ -38,18 +38,17 @@ pip install -e .
 
 ## 🚦 Quick Start
 
+### Navigate to the Correct Directory
+```bash
+openengine-with-UI/openengine/openengine/
+```
+
 ### Running via Web UI 
 Launch the interactive dashboard to run backtests visually:
 ```bash
 python -m openengine.web.app
 ```
 Then open `http://localhost:5000` in your browser.
-
-### Running via CLI
-Run the included example script to see the engine in action:
-```bash
-openengine
-```
 
 ---
 
