@@ -1,6 +1,6 @@
 # OpenEngine
 
-**OpenEngine** is a powerful, event-driven Python library designed for backtesting and live trading in Indian markets (NSE/BSE). It provides a modular framework for developing trading strategies, running intensive backtests, and seamlessly transitioning to live execution via the OpenAlgo API.
+**OpenEngine** is a powerful, event-driven Python library designed for backtesting and live trading in Indian markets (NSE/BSE). It provides a modular framework for developing trading strategies, running intensive backtests
 
 The project now includes a **Professional Web UI** for interactive analysis and strategy management.
 
@@ -13,7 +13,6 @@ The project now includes a **Professional Web UI** for interactive analysis and 
 - **Yahoo Finance Integration**: Hassle-free historical data fetching for Indian stocks.
 - **Built-in Strategies**: Includes standard examples like SMA/EMA crossovers.
 - **Performance Metrics**: Detailed stats including Sharpe Ratio, Max Drawdown, CAGR, and Win Rate.
-- **Modular Design**: Easy to extend with custom data connectors, brokers, or strategies.
 
 ### Web UI
 - **Interactive Dashboard**: Modern dark-themed UI built with Flask.
@@ -42,7 +41,7 @@ pip install -e .
 ### Running via Web UI 
 Launch the interactive dashboard to run backtests visually:
 ```bash
-openengine-web
+python -m openengine.web.app
 ```
 Then open `http://localhost:5000` in your browser.
 
