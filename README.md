@@ -24,12 +24,6 @@ The project now includes a **Professional Web UI** for interactive analysis and 
 
 ---
 
-## 🛠️ Installation
-
-### 1. Regular Installation (Coming soon to PyPI)
-```bash
-pip install openengine
-```
 
 ### 2. Developer Installation (Recommended)
 ```bash
@@ -45,7 +39,7 @@ pip install -e .
 
 ## 🚦 Quick Start
 
-### Running via Web UI (Recommended)
+### Running via Web UI 
 Launch the interactive dashboard to run backtests visually:
 ```bash
 openengine-web
@@ -60,36 +54,14 @@ openengine
 
 ---
 
-## 📂 Project Structure
-
-```text
-openengine/
-├── data/           # Market data connectors (Yahoo Finance, DuckDB)
-├── engine/         # Core backtester and live trading logic
-├── execution/      # Broker interfaces (OpenAlgo API)
-├── strategies/     # Strategy implementations (SMA, EMA, OOS)
-├── utilities/      # Math, statistics, and helper functions
-└── web/            # Flask application, templates, and static assets
-```
-
----
-
 ## 🔧 Dependencies
 - `pandas` & `numpy` (Data processing)
 - `yfinance` (Market data)
-- `duckdb` (Fast local data storage)
 - `flask` (Web UI backend)
 - `plotly` (Interactive visualizations)
 
 ---
 
-## 🤝 Contributing
-Contributions are welcome! Whether it's a bug report, a new feature, or documentation improvements:
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ---
 
